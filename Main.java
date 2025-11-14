@@ -1,4 +1,3 @@
-// Main.java  (updated: enforce one salary per agent; each salary may be shared by many agents)
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
