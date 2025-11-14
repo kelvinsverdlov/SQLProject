@@ -1,0 +1,62 @@
+# --- Authors (5 entries) ---
+1|3|Eve Summers|555-0201|50
+1|3|Frank O'Neil|555-0202|40
+1|3|Grace Park|555-0203|60
+1|3|Hank Patel|555-0204|45
+1|3|Ivy Zhang|555-0205|55
+
+# --- Agents (5 entries, each >=10 years so WorkBenefits are auto-added) ---
+1|1|Alice Johnson|555-0101|12
+1|1|Bob Martin|555-0102|11
+1|1|Cara Lee|555-0103|15
+1|1|Daniel Cruz|555-0104|10
+1|1|Ethan Cole|555-0105|13
+
+# --- Books (5 entries + BookAuthor links) ---
+1|2|Deep Java|1|3000
+1|2|Database Patterns|2|2800
+1|2|Effective SQL|3|3200
+1|2|Refactoring Tips|4|2700
+1|2|Advanced APIs|5|3500
+
+# --- Customers (5 entries + CustomerAgentBook links) ---
+1|4|1|1|Customer One|444-1001
+1|4|2|2|Customer Two|444-1002
+1|4|3|3|Customer Three|444-1003
+1|4|4|4|Customer Four|444-1004
+1|4|5|5|Customer Five|444-1005
+
+# --- Salaries (register subtype 1|5|Salary|Experience|AgentID) ---
+# Create salary rows for experience 0..20 (one per year). Salary amount = 2000 + experience*100.
+# Agent assignment cycles through AgentID 1..5 so AgentSalary gets populated.
+1|5|2000|0|1
+1|5|2100|1|2
+1|5|2200|2|3
+1|5|2300|3|4
+1|5|2400|4|5
+1|5|2500|5|1
+1|5|2600|6|2
+1|5|2700|7|3
+1|5|2800|8|4
+1|5|2900|9|5
+1|5|3000|10|1
+1|5|3100|11|2
+1|5|3200|12|3
+1|5|3300|13|4
+1|5|3400|14|5
+1|5|3500|15|1
+1|5|3600|16|2
+1|5|3700|17|3
+1|5|3800|18|4
+1|5|3900|19|5
+1|5|4000|20|1
+
+# --- Exercise updates (toggle experience on AgentID=2 to test benefit removal/add) ---
+2|1|2|Experience|9
+2|1|2|Experience|11
+
+# --- Cascade delete example (remove BookID=3 and its links) ---
+3|2|3
+
+# --- End of script ---
+0
