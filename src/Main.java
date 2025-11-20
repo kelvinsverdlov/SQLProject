@@ -1,3 +1,4 @@
+// Main.java  (updated: enforce one salary per agent; each salary may be shared by many agents)
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
@@ -370,12 +371,7 @@ public class Main
                         continue;
                     }
 
-                    boolean numericColumn = false;
-                    if (tableName.equals("Agents") && columnName.equals("Experience")) numericColumn = true;
-                    if (tableName.equals("Books") && (columnName.equals("AuthorID") || columnName.equals("Cost"))) numericColumn = true;
-                    if (tableName.equals("Authors") && columnName.equals("HourlyCharge")) numericColumn = true;
-                    if (tableName.equals("Customers") && (columnName.equals("AgentID") || columnName.equals("BookID"))) numericColumn = true;
-                    if (tableName.equals("Salaries") && (columnName.equals("Salary") || columnName.equals("Experience"))) numericColumn = true;
+                    boolean numericColumn = isNumericColumn(tableName, columnName);
 
                     if (numericColumn && !isInteger(newValue))
                     {
@@ -390,7 +386,7 @@ public class Main
 
                     try
                     {
-                        int updatedRowCount = statement.executeUpdate(updateSql);
+                        statement.executeUpdate(updateSql);
 
                         // Special handling: if we updated customer's AgentID or BookID adjust CustomerAgentBook link
                         if (tableName.equals("Customers") && (columnName.equals("AgentID") || columnName.equals("BookID")))
@@ -666,6 +662,17 @@ public class Main
         }
     }
 
+    private static boolean isNumericColumn(String tableName, String columnName)
+    {
+        boolean numericColumn = false;
+        if (tableName.equals("Agents") && columnName.equals("Experience")) numericColumn = true;
+        if (tableName.equals("Books") && (columnName.equals("AuthorID") || columnName.equals("Cost"))) numericColumn = true;
+        if (tableName.equals("Authors") && columnName.equals("HourlyCharge")) numericColumn = true;
+        if (tableName.equals("Customers") && (columnName.equals("AgentID") || columnName.equals("BookID"))) numericColumn = true;
+        if (tableName.equals("Salaries") && (columnName.equals("Salary") || columnName.equals("Experience"))) numericColumn = true;
+        return numericColumn;
+    }
+
     // ----------------------------
     // Split and trim helpers
     // ----------------------------
@@ -849,15 +856,20 @@ public class Main
         if (columns.length != values.length) return -1;
 
         String insertSql = "INSERT INTO " + tableName + " (";
+
         int columnIndex = 0;
+
         while (columnIndex < columns.length)
         {
             insertSql = insertSql + columns[columnIndex];
             if (columnIndex < columns.length - 1) insertSql = insertSql + ", ";
             columnIndex = columnIndex + 1;
         }
+
         insertSql = insertSql + ") VALUES (";
+
         int valueIndex = 0;
+
         while (valueIndex < values.length)
         {
             String value = values[valueIndex];
@@ -867,29 +879,46 @@ public class Main
                 if (isInteger(value)) insertSql = insertSql + value;
                 else insertSql = insertSql + "'" + escapeSingleQuotes(value) + "'";
             }
+
             if (valueIndex < values.length - 1) insertSql = insertSql + ", ";
             valueIndex = valueIndex + 1;
         }
+
         insertSql = insertSql + ");";
+
+        try
+        {
+            statement.executeUpdate(insertSql);
+        }
+        catch (SQLException exception)
+        {
+            System.out.println("Error inserting row: " + exception.toString());
+            return -1;
+        }
+
+        // Determine primary key column name for this table (uses your existing helper)
+        String primaryKeyColumn = "rowid"; // fallback
+        String[] tableColumns = getColumnsForTable(tableName);
+        if (tableColumns != null && tableColumns.length > 0)
+        {
+            primaryKeyColumn = tableColumns[0];
+        }
 
         int newGeneratedId = -1;
 
         try
         {
-            statement.executeUpdate(insertSql, Statement.RETURN_GENERATED_KEYS);
-            ResultSet generatedKeysResultSet = statement.getGeneratedKeys();
-            if (generatedKeysResultSet != null)
+            String findMaxSql = "SELECT MAX(" + primaryKeyColumn + ") AS maxId FROM " + tableName + ";";
+            ResultSet resultSet = statement.executeQuery(findMaxSql);
+            if (resultSet.next())
             {
-                if (generatedKeysResultSet.next())
-                {
-                    newGeneratedId = generatedKeysResultSet.getInt(1);
-                }
-                generatedKeysResultSet.close();
+                newGeneratedId = resultSet.getInt("maxId");
             }
+            resultSet.close();
         }
         catch (SQLException exception)
         {
-            System.out.println("Error inserting row and retrieving generated id: " + exception.toString());
+            System.out.println("Error retrieving generated id (MAX fallback): " + exception.toString());
         }
 
         return newGeneratedId;
@@ -903,6 +932,7 @@ public class Main
         String[] columns = {"AgentID", "SalaryBonus", "PaidLeaveDuration"};
         String[] values = {integerToString(agentId), integerToString(salaryBonus), integerToString(paidLeaveDays)};
         int benefitId = insertIntoTableAndReturnId("WorkBenefits", columns, values, statement);
+
         if (benefitId != -1)
         {
             String[] linkColumns = {"AgentID", "BenefitID"};
@@ -1521,6 +1551,7 @@ public class Main
             if (choice.equals("3")) columnName = "HourlyCharge";
             System.out.println("Enter new value:");
             String newValue = scanner.nextLine();
+
             if (columnName.equals("HourlyCharge"))
             {
                 while (!isInteger(newValue))
